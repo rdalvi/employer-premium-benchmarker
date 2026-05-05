@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Employer Health Premium Benchmarker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Employer Health Premium Benchmarker</h1>
+    <p class="subtitle" id="subtitle"></p>
+  </header>
+
+  <section class="card inputs">
+    <h2>Employer profile</h2>
+    <div class="grid">
+      <label>
+        <span>State</span>
+        <select id="state"></select>
+      </label>
+      <label>
+        <span>Number of employees</span>
+        <input type="number" id="employees" min="1" max="500000" step="1" value="250">
+      </label>
+      <label>
+        <span>Industry</span>
+        <select id="industry"></select>
+      </label>
+      <label>
+        <span>Single-coverage enrollment share <small id="single-share-readout"></small></span>
+        <input type="range" id="single-share" min="0" max="1" step="0.05" value="0.58">
+      </label>
+    </div>
+  </section>
+
+  <section class="card headline">
+    <h2 id="headline-title">Benchmark</h2>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Fully-insured PEPM</div>
+        <div class="metric-value" id="fi-pepm">–</div>
+        <div class="metric-range" id="fi-range"></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Self-funded equivalent PEPM</div>
+        <div class="metric-value" id="sf-pepm">–</div>
+        <div class="metric-range" id="sf-range"></div>
+        <div class="metric-delta" id="sf-delta"></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Similar-size employers self-funded</div>
+        <div class="metric-value" id="sf-prob">–</div>
+        <div class="metric-range">From MEPS-IC self-insured share by firm-size bucket.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Breakdown by coverage tier</h2>
+    <div class="table-wrap">
+      <table id="tier-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>FI annual</th>
+            <th>FI monthly</th>
+            <th>FI range (monthly)</th>
+            <th>SF annual</th>
+            <th>SF monthly</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Estimated annual impact</h2>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Fully-insured total annual</div>
+        <div class="metric-value" id="ann-fi">–</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Self-funded equivalent total annual</div>
+        <div class="metric-value" id="ann-sf">–</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Implied annual savings if self-funded</div>
+        <div class="metric-value" id="ann-savings">–</div>
+        <div class="metric-range">Real-world variance is large — see notes below.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Notes &amp; caveats</h2>
+    <ul id="notes"></ul>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>How is this calculated?</summary>
+      <p>For each of single and family coverage:</p>
+      <ol>
+        <li>Start with the <strong>national average annual premium</strong> from MEPS-IC.</li>
+        <li>Multiply by the <strong>state index</strong> (state premium &divide; national premium).</li>
+        <li>Multiply by the <strong>firm-size factor</strong> for the employer's size bucket.</li>
+        <li>Multiply by the <strong>industry factor</strong> (national-level industry premium ratio).</li>
+        <li>For self-funded, multiply by the <strong>SF/FI cost ratio</strong> (~0.96), reflecting elimination
+          of state premium tax and insurer profit margin, net of stop-loss premium.</li>
+      </ol>
+      <p>Single and family results are blended using the configured enrollment-tier mix.
+        The reported range reflects benchmark-level uncertainty; it does <strong>not</strong> include
+        employer-specific variance from age/sex mix, claims history, or plan design.</p>
+    </details>
+    <details>
+      <summary>Data sources</summary>
+      <pre id="meta-json"></pre>
+    </details>
+  </section>
+
+  <footer>
+    <p>Benchmarks derived from AHRQ MEPS-IC public summary tables. Estimates are bucket-level
+      benchmarks, not underwritten quotes. Source code on
+      <a id="repo-link" href="#">GitHub</a>.</p>
+  </footer>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
