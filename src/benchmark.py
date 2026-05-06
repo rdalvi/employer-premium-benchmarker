@@ -86,6 +86,7 @@ class Benchmarks:
         employees: int,
         industry: str,
         single_share: Optional[float] = None,
+        pop_health: str = "average",
     ) -> BenchmarkResult:
         state = state.upper()
         if state not in self.data["state_index_single"]:
@@ -94,12 +95,25 @@ class Benchmarks:
             raise ValueError(f"Unknown industry: {industry}")
         if employees < 1:
             raise ValueError("Employee count must be >= 1")
+        if pop_health not in ("healthier", "average", "less_healthy"):
+            raise ValueError("pop_health must be 'healthier', 'average', or 'less_healthy'")
 
         baseline = self.data["national_baseline"]
         bucket = self.firm_size_bucket(employees)
         ind_factor = self.data["industry_index"][industry]["factor"]
-        sf_adj = self.data["self_funded_adjustment"]
+        variability = self.data["industry_index"][industry].get("health_variability_pct", 0.0)
+        health_delta = (
+            -variability if pop_health == "healthier"
+            else variability if pop_health == "less_healthy"
+            else 0.0
+        )
+        health_factor = 1.0 + health_delta
         unc = self.data["model_uncertainty"]
+        state_tax = self.data["state_premium_tax"][state]
+        insurer_margin = self.data["self_funded_components"]["insurer_margin_pct"]
+        stop_loss = bucket["stop_loss_pct"]
+        sf_ratio = 1.0 - state_tax - insurer_margin + stop_loss
+        sf_extra_uncertainty = 0.04
 
         single_share = (
             single_share
@@ -125,11 +139,10 @@ class Benchmarks:
         fi_family = self._wrap(family_annual, unc["family_pct"])
         fi_blended = self._blend(fi_single, fi_family, single_share, family_share)
 
-        sf_single_annual = single_annual * sf_adj["single_ratio"]
-        sf_family_annual = family_annual * sf_adj["family_ratio"]
-        # Self-funded carries additional employer-specific variance from claims volatility.
-        sf_unc_single = unc["single_pct"] + sf_adj["uncertainty_pct"]
-        sf_unc_family = unc["family_pct"] + sf_adj["uncertainty_pct"]
+        sf_single_annual = single_annual * sf_ratio * health_factor
+        sf_family_annual = family_annual * sf_ratio * health_factor
+        sf_unc_single = unc["single_pct"] + sf_extra_uncertainty
+        sf_unc_family = unc["family_pct"] + sf_extra_uncertainty
         sf_single = self._wrap(sf_single_annual, sf_unc_single)
         sf_family = self._wrap(sf_family_annual, sf_unc_family)
         sf_blended = self._blend(sf_single, sf_family, single_share, family_share)
@@ -137,7 +150,9 @@ class Benchmarks:
         monthly_savings = fi_blended.monthly - sf_blended.monthly
         annual_savings = monthly_savings * 12
 
-        notes = self._build_notes(employees, bucket, state)
+        notes = self._build_notes(
+            employees, bucket, state, sf_ratio, state_tax, insurer_margin, stop_loss, pop_health, health_delta
+        )
 
         return BenchmarkResult(
             inputs={
@@ -187,22 +202,51 @@ class Benchmarks:
             high=round(high, 2),
         )
 
-    def _build_notes(self, employees: int, bucket: dict, state: str) -> list[str]:
+    def _build_notes(
+        self,
+        employees: int,
+        bucket: dict,
+        state: str,
+        sf_ratio: float,
+        state_tax: float,
+        insurer_margin: float,
+        stop_loss: float,
+        pop_health: str,
+        health_delta: float,
+    ) -> list[str]:
         notes = [
             f"Benchmark based on AHRQ MEPS-IC {self.data['_meta']['data_year']} published summary tables.",
             f"Estimates apply to employers in the {bucket['label']} bucket; "
             f"~{int(bucket['self_insured_pct']*100)}% of enrollees in this size bucket "
             f"are in self-insured plans nationally.",
-            "Self-funded figure is an employer-cost equivalent (claims + admin + stop-loss), "
-            "not a market premium.",
+            f"Self-funded cost built up component-wise: FI premium "
+            f"− state A/H premium tax ({state_tax*100:.2f}% in {state}) "
+            f"− insurer profit/risk margin ({insurer_margin*100:.1f}%) "
+            f"+ stop-loss premium ({stop_loss*100:.1f}% for {bucket['label']}). "
+            f"Net SF/FI ratio: {sf_ratio:.3f}.",
             "Range reflects benchmark-level uncertainty only. True quotes also depend on "
             "workforce age/sex mix, claims history, plan design, and carrier — none of which "
             "MEPS-IC captures at the employer level.",
         ]
+        if health_delta != 0:
+            direction = "below" if health_delta < 0 else "above"
+            notes.append(
+                f"Population-health adjustment: {abs(health_delta)*100:.0f}% {direction} the "
+                f"industry baseline, applied to the self-funded estimate only. Fully-insured "
+                f"premiums reflect industry-pooled experience and don't fully pass through a single "
+                f"employer's population health, but self-funded actual claims do."
+            )
+        if sf_ratio >= 1.0:
+            notes.append(
+                "For this state and firm-size combination, modeled stop-loss cost exceeds "
+                "modeled premium-tax + insurer-margin savings, so self-funding is not projected "
+                "to lower employer cost."
+            )
         if employees < 50:
             notes.append(
                 "At <50 employees, ACA small-group rating rules apply (modified community rating). "
-                "Self-funded comparison is unusual at this size and stop-loss costs can be material."
+                "Self-funded comparison is unusual at this size; many small employers use "
+                "level-funded arrangements instead."
             )
         if employees >= 1000:
             notes.append(
@@ -217,5 +261,6 @@ def estimate(
     employees: int,
     industry: str,
     single_share: Optional[float] = None,
+    pop_health: str = "average",
 ) -> BenchmarkResult:
-    return Benchmarks().estimate(state, employees, industry, single_share)
+    return Benchmarks().estimate(state, employees, industry, single_share, pop_health)

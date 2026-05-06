@@ -32,6 +32,14 @@
         <span>Single-coverage enrollment share <small id="single-share-readout"></small></span>
         <input type="range" id="single-share" min="0" max="1" step="0.05" value="0.58">
       </label>
+      <label>
+        <span>Population health <small id="health-readout"></small></span>
+        <select id="pop-health">
+          <option value="healthier">Healthier than industry peers</option>
+          <option value="average" selected>Average for industry</option>
+          <option value="less_healthy">Less healthy than industry peers</option>
+        </select>
+      </label>
     </div>
   </section>
 
@@ -60,7 +68,7 @@
     <div class="impact-chart">
       <div class="bar-row">
         <div class="bar-label">Fully-insured total annual</div>
-        <div class="bar-track"><div class="bar bar-fi"></div></div>
+        <div class="bar-track"><div class="bar bar-fi" id="bar-fi"></div></div>
         <div class="bar-amount" id="ann-fi">–</div>
       </div>
       <div class="bar-row">
@@ -73,13 +81,29 @@
       </div>
       <div class="legend">
         <span class="legend-item"><span class="swatch swatch-fi"></span>Premium / employer cost</span>
-        <span class="legend-item"><span class="swatch swatch-savings"></span>Implied annual savings if self-funded</span>
+        <span class="legend-item"><span class="swatch swatch-savings" id="legend-swatch-savings"></span><span id="legend-savings-label">Implied annual savings if self-funded</span></span>
       </div>
-      <div class="savings-callout">
-        <div class="savings-callout-label">Implied annual savings if self-funded</div>
+      <div class="savings-callout" id="savings-callout">
+        <div class="savings-callout-label" id="savings-callout-label">Implied annual savings if self-funded</div>
         <div class="savings-callout-value" id="ann-savings">–</div>
       </div>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>Self-funded ratio buildup</h2>
+    <p class="buildup-intro" id="buildup-intro"></p>
+    <table class="buildup-table">
+      <tbody>
+        <tr><td>Fully-insured premium baseline (industry-pooled, not adjusted for this employer's population health)</td><td class="buildup-num">100.00%</td></tr>
+        <tr class="buildup-sub"><td>− State A/H premium tax <span id="buildup-state"></span> (eliminated under ERISA)</td><td class="buildup-num" id="buildup-tax">–</td></tr>
+        <tr class="buildup-sub"><td>− Insurer profit / risk margin (not paid to TPA in self-funded)</td><td class="buildup-num" id="buildup-margin">–</td></tr>
+        <tr class="buildup-sub"><td>+ Stop-loss premium <span id="buildup-bucket"></span></td><td class="buildup-num" id="buildup-stoploss">–</td></tr>
+        <tr class="buildup-subtotal"><td>Funding-mechanism ratio (before population-health adjustment)</td><td class="buildup-num" id="buildup-funding-ratio">–</td></tr>
+        <tr class="buildup-sub" id="buildup-health-row"><td>× Population-health factor <span id="buildup-health-detail"></span> (applies only to SF — actual claims scale with workforce health)</td><td class="buildup-num" id="buildup-health">–</td></tr>
+        <tr class="buildup-total"><td>Net self-funded employer cost vs fully-insured</td><td class="buildup-num" id="buildup-ratio">–</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <section class="card">
@@ -96,12 +120,23 @@
         <li>Multiply by the <strong>state index</strong> (state premium &divide; national premium).</li>
         <li>Multiply by the <strong>firm-size factor</strong> for the employer's size bucket.</li>
         <li>Multiply by the <strong>industry factor</strong> (national-level industry premium ratio).</li>
-        <li>For self-funded, multiply by the <strong>SF/FI cost ratio</strong> (~0.96), reflecting elimination
-          of state premium tax and insurer profit margin, net of stop-loss premium.</li>
+        <li>If the user reports the <strong>population is healthier or less healthy than industry peers</strong>,
+          apply an industry-specific health adjustment (±2% for knowledge work, ±8–10% for physically
+          demanding industries like construction or mining). Applied <strong>only to the self-funded estimate</strong>:
+          fully-insured premiums reflect industry-pooled / community-rated experience and don't fully pass through
+          a single employer's population health, but self-funded actual claims do.</li>
+        <li>For self-funded, multiply by a <strong>state- and size-specific cost ratio</strong> built up as
+          <code>1 − state A/H premium tax − insurer profit/risk margin (~4%) + bucket stop-loss premium</code>.
+          State premium tax rates come from NAIC; stop-loss premium is industry estimate by group size
+          (8% &lt;50, 5% 50–99, 2.5% 100–999, 1% 1,000+).</li>
       </ol>
       <p>Single and family results are blended using the configured enrollment-tier mix.
         Figures shown are point estimates from a bucket-level model and do <strong>not</strong> reflect
         employer-specific variance from age/sex mix, claims history, or plan design.</p>
+      <p>An empirical SF-vs-FI premium ratio from MEPS-IC summary tables is not directly available — published
+        tables aggregate across funding type, and a naive pooled comparison would confound the funding effect
+        with selection (which employers self-fund). The component buildup avoids that by modeling the
+        funding-mechanism delta directly.</p>
     </details>
     <details>
       <summary>Data sources</summary>

@@ -15,12 +15,14 @@
       "industry_single": "Table II.A.2 (industry)",
       "self_insured_pct": "Table X.B.2",
       "employee_contribution_single": "Table II.C.1",
-      "employee_contribution_family": "Table II.F.1"
+      "employee_contribution_family": "Table II.F.1",
+      "state_premium_tax": "NAIC State Insurance Charts, Premium Tax Rate by Line (Dec 2025), A/H rate per state",
+      "stop_loss_pct": "Industry estimates (Mercer, Aon, KFF EHBS Section 10) for stop-loss premium as % of total cost by group size"
     },
     "notes": [
       "Values are approximations of MEPS-IC 2023 published summary statistics.",
       "Cross-tabulations of state x firm-size x industry are not published; the model multiplies independent adjustment factors.",
-      "Self-funded 'premium' is an employer-cost equivalent (claims + admin + stop-loss), not a market premium.",
+      "Self-funded employer cost is built up component-wise: FI premium minus state premium tax (eliminated under ERISA) minus insurer profit/risk margin, plus stop-loss premium. MEPS-IC published summary tables aggregate FI and SF together, so a direct empirical SF/FI ratio is not available without microdata.",
       "Update annually when AHRQ releases new MEPS-IC tables (typically July, ~18 months after data year)."
     ]
   },
@@ -63,40 +65,53 @@
   },
 
   "firm_size_buckets": [
-    {"id": "lt50",     "label": "<50 employees",        "min": 1,    "max": 49,    "single_index": 0.97, "family_index": 0.96, "self_insured_pct": 0.21},
-    {"id": "50_99",    "label": "50-99 employees",       "min": 50,   "max": 99,    "single_index": 1.00, "family_index": 1.00, "self_insured_pct": 0.31},
-    {"id": "100_999",  "label": "100-999 employees",     "min": 100,  "max": 999,   "single_index": 1.01, "family_index": 1.02, "self_insured_pct": 0.49},
-    {"id": "1000plus", "label": "1,000+ employees",      "min": 1000, "max": null,  "single_index": 1.03, "family_index": 1.04, "self_insured_pct": 0.83}
+    {"id": "lt50",     "label": "<50 employees",        "min": 1,    "max": 49,    "single_index": 0.97, "family_index": 0.96, "self_insured_pct": 0.21, "stop_loss_pct": 0.080},
+    {"id": "50_99",    "label": "50-99 employees",       "min": 50,   "max": 99,    "single_index": 1.00, "family_index": 1.00, "self_insured_pct": 0.31, "stop_loss_pct": 0.050},
+    {"id": "100_999",  "label": "100-999 employees",     "min": 100,  "max": 999,   "single_index": 1.01, "family_index": 1.02, "self_insured_pct": 0.49, "stop_loss_pct": 0.025},
+    {"id": "1000plus", "label": "1,000+ employees",      "min": 1000, "max": null,  "single_index": 1.03, "family_index": 1.04, "self_insured_pct": 0.83, "stop_loss_pct": 0.010}
   ],
 
   "industry_index": {
-    "_doc": "Multiplier vs all-industry average. Same factor applied to single and family. From MEPS-IC industry tables (national).",
-    "agriculture_forestry_fishing":   {"label": "Agriculture, forestry, fishing",         "factor": 0.92},
-    "mining":                          {"label": "Mining",                                 "factor": 1.10},
-    "utilities":                       {"label": "Utilities",                              "factor": 1.11},
-    "construction":                    {"label": "Construction",                           "factor": 0.96},
-    "manufacturing":                   {"label": "Manufacturing",                          "factor": 1.04},
-    "wholesale_trade":                 {"label": "Wholesale trade",                        "factor": 0.99},
-    "retail_trade":                    {"label": "Retail trade",                           "factor": 0.93},
-    "transportation_warehousing":      {"label": "Transportation and warehousing",         "factor": 1.00},
-    "information":                     {"label": "Information",                            "factor": 1.08},
-    "finance_insurance":               {"label": "Finance and insurance",                  "factor": 1.07},
-    "real_estate":                     {"label": "Real estate, rental, leasing",           "factor": 1.02},
-    "professional_services":           {"label": "Professional, scientific, technical",    "factor": 1.05},
-    "management":                      {"label": "Management of companies",                "factor": 1.08},
-    "admin_support_waste":             {"label": "Administrative, support, waste mgmt",    "factor": 0.94},
-    "education":                       {"label": "Educational services",                   "factor": 1.06},
-    "health_social":                   {"label": "Health care and social assistance",      "factor": 1.02},
-    "arts_entertainment":              {"label": "Arts, entertainment, recreation",        "factor": 0.95},
-    "accommodation_food":              {"label": "Accommodation and food services",        "factor": 0.85},
-    "other_services":                  {"label": "Other services",                         "factor": 0.95}
+    "_doc": "Multiplier vs all-industry average. Same factor applied to single and family. From MEPS-IC industry tables (national). 'health_variability_pct' is the +/- adjustment applied when an employer reports their population is healthier or less healthy than industry peers; wider for industries with more physically demanding work or wider workforce health distribution.",
+    "agriculture_forestry_fishing":   {"label": "Agriculture, forestry, fishing",         "factor": 0.92, "health_variability_pct": 0.08},
+    "mining":                          {"label": "Mining",                                 "factor": 1.10, "health_variability_pct": 0.10},
+    "utilities":                       {"label": "Utilities",                              "factor": 1.11, "health_variability_pct": 0.05},
+    "construction":                    {"label": "Construction",                           "factor": 0.96, "health_variability_pct": 0.10},
+    "manufacturing":                   {"label": "Manufacturing",                          "factor": 1.04, "health_variability_pct": 0.08},
+    "wholesale_trade":                 {"label": "Wholesale trade",                        "factor": 0.99, "health_variability_pct": 0.05},
+    "retail_trade":                    {"label": "Retail trade",                           "factor": 0.93, "health_variability_pct": 0.05},
+    "transportation_warehousing":      {"label": "Transportation and warehousing",         "factor": 1.00, "health_variability_pct": 0.08},
+    "information":                     {"label": "Information",                            "factor": 1.08, "health_variability_pct": 0.02},
+    "finance_insurance":               {"label": "Finance and insurance",                  "factor": 1.07, "health_variability_pct": 0.02},
+    "real_estate":                     {"label": "Real estate, rental, leasing",           "factor": 1.02, "health_variability_pct": 0.03},
+    "professional_services":           {"label": "Professional, scientific, technical",    "factor": 1.05, "health_variability_pct": 0.02},
+    "management":                      {"label": "Management of companies",                "factor": 1.08, "health_variability_pct": 0.02},
+    "admin_support_waste":             {"label": "Administrative, support, waste mgmt",    "factor": 0.94, "health_variability_pct": 0.05},
+    "education":                       {"label": "Educational services",                   "factor": 1.06, "health_variability_pct": 0.03},
+    "health_social":                   {"label": "Health care and social assistance",      "factor": 1.02, "health_variability_pct": 0.04},
+    "arts_entertainment":              {"label": "Arts, entertainment, recreation",        "factor": 0.95, "health_variability_pct": 0.05},
+    "accommodation_food":              {"label": "Accommodation and food services",        "factor": 0.85, "health_variability_pct": 0.05},
+    "other_services":                  {"label": "Other services",                         "factor": 0.95, "health_variability_pct": 0.05}
   },
 
-  "self_funded_adjustment": {
-    "_doc": "Self-funded employer-cost equivalent vs fully-insured premium for the same plan generosity. Reflects state premium-tax savings (~2.0%) and insurer risk/profit margin (~3-5%) net of stop-loss premium (~1-2%). Range from MEPS-IC + Kaiser HRET comparisons.",
-    "single_ratio": 0.96,
-    "family_ratio": 0.96,
-    "uncertainty_pct": 0.04
+  "self_funded_components": {
+    "_doc": "Self-funded employer cost = FI premium x (1 - state_premium_tax - insurer_margin_pct + bucket.stop_loss_pct). State premium tax and insurer profit/risk margin are eliminated under ERISA self-funding; stop-loss premium is added. Plan-design and claims components are assumed equivalent at the bucket-average level.",
+    "insurer_margin_pct": 0.040
+  },
+
+  "state_premium_tax": {
+    "_doc": "State accident & health (A/H) premium tax rate, applied to fully-insured group health premium. Eliminated under ERISA self-funding for private employers. Source: NAIC State Insurance Charts - Premium Tax Rate by Line (Dec 2025). Where A/H = '#' (general rate), the general rate is used; where a group-specific rate is published, that is used (e.g., NJ group A/H 1.05%, NE group A/H 0.5%). New Mexico includes the 3.75% surtax on gross health premiums.",
+    "AL": 0.0160, "AK": 0.0270, "AZ": 0.0170, "AR": 0.0250, "CA": 0.0235,
+    "CO": 0.0200, "CT": 0.0150, "DE": 0.0200, "DC": 0.0200, "FL": 0.0175,
+    "GA": 0.0225, "HI": 0.04265, "ID": 0.0150, "IL": 0.0040, "IN": 0.0130,
+    "IA": 0.0095, "KS": 0.0200, "KY": 0.0200, "LA": 0.0200, "ME": 0.0200,
+    "MD": 0.0200, "MA": 0.0228, "MI": 0.0095, "MN": 0.0200, "MS": 0.0300,
+    "MO": 0.0200, "MT": 0.0275, "NE": 0.0050, "NV": 0.0350, "NH": 0.0200,
+    "NJ": 0.0105, "NM": 0.0675, "NY": 0.0175, "NC": 0.0190, "ND": 0.0175,
+    "OH": 0.0100, "OK": 0.0225, "OR": 0.0000, "PA": 0.0200, "RI": 0.0200,
+    "SC": 0.0125, "SD": 0.0250, "TN": 0.0250, "TX": 0.0175, "UT": 0.0000,
+    "VT": 0.0200, "VA": 0.0225, "WA": 0.0200, "WV": 0.0300, "WI": 0.0200,
+    "WY": 0.0075
   },
 
   "enrollment_mix": {
@@ -106,7 +121,7 @@
   },
 
   "model_uncertainty": {
-    "_doc": "Approximate one-sigma uncertainty around the point estimate, accounting for unobserved employer-specific factors (demographics, claims, plan design).",
+    "_doc": "Approximate one-sigma uncertainty around the point estimate, accounting for unobserved employer-specific factors (demographics, claims, plan design). Used by the Python CLI; the web tool reports point estimates only.",
     "single_pct": 0.12,
     "family_pct": 0.13
   }
