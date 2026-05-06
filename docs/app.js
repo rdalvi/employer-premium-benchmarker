@@ -192,14 +192,16 @@ function recalc() {
   const calloutLabel = $("savings-callout-label");
   const legendLabel = $("legend-savings-label");
   const legendSwatch = $("legend-swatch-savings");
+  const savingsPctOfFI = annualFI > 0 ? (Math.abs(annualSavings) / annualFI) * 100 : 0;
+  const pctText = `${savingsPctOfFI.toFixed(1)}%`;
   if (sfCheaper) {
-    $("ann-savings").textContent = fmtUSD0.format(annualSavings);
+    $("ann-savings").textContent = `${fmtUSD0.format(annualSavings)} (${pctText})`;
     calloutLabel.textContent = "Implied annual savings if self-funded";
     legendLabel.textContent = "Implied annual savings if self-funded";
     callout.classList.remove("negative");
     legendSwatch.classList.remove("negative");
   } else {
-    $("ann-savings").textContent = fmtUSD0.format(Math.abs(annualSavings));
+    $("ann-savings").textContent = `${fmtUSD0.format(Math.abs(annualSavings))} (${pctText})`;
     calloutLabel.textContent = "Modeled additional cost if self-funded";
     legendLabel.textContent = "Modeled additional cost if self-funded";
     callout.classList.add("negative");
