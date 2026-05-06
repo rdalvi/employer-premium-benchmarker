@@ -35,19 +35,12 @@ function firmSizeBucket(employees) {
   throw new Error(`No firm-size bucket for ${employees}`);
 }
 
-function wrap(annual, uncertaintyPct) {
-  return {
-    annual: Math.round(annual),
-    monthly: annual / 12,
-    low: (annual * (1 - uncertaintyPct)) / 12,
-    high: (annual * (1 + uncertaintyPct)) / 12,
-  };
+function wrap(annual) {
+  return { annual: Math.round(annual), monthly: annual / 12 };
 }
 function blend(single, family, singleShare, familyShare) {
   const monthly = single.monthly * singleShare + family.monthly * familyShare;
-  const low = single.low * singleShare + family.low * familyShare;
-  const high = single.high * singleShare + family.high * familyShare;
-  return { annual: Math.round(monthly * 12), monthly, low, high };
+  return { annual: Math.round(monthly * 12), monthly };
 }
 
 function estimate({ state, employees, industry, singleShare }) {
@@ -55,7 +48,6 @@ function estimate({ state, employees, industry, singleShare }) {
   const bucket = firmSizeBucket(employees);
   const indFactor = D.industry_index[industry].factor;
   const sfAdj = D.self_funded_adjustment;
-  const unc = D.model_uncertainty;
   const familyShare = 1 - singleShare;
 
   const fiSingleAnn =
@@ -69,12 +61,12 @@ function estimate({ state, employees, industry, singleShare }) {
     bucket.family_index *
     indFactor;
 
-  const fiSingle = wrap(fiSingleAnn, unc.single_pct);
-  const fiFamily = wrap(fiFamilyAnn, unc.family_pct);
+  const fiSingle = wrap(fiSingleAnn);
+  const fiFamily = wrap(fiFamilyAnn);
   const fiBlended = blend(fiSingle, fiFamily, singleShare, familyShare);
 
-  const sfSingle = wrap(fiSingleAnn * sfAdj.single_ratio, unc.single_pct + sfAdj.uncertainty_pct);
-  const sfFamily = wrap(fiFamilyAnn * sfAdj.family_ratio, unc.family_pct + sfAdj.uncertainty_pct);
+  const sfSingle = wrap(fiSingleAnn * sfAdj.single_ratio);
+  const sfFamily = wrap(fiFamilyAnn * sfAdj.family_ratio);
   const sfBlended = blend(sfSingle, sfFamily, singleShare, familyShare);
 
   const notes = [
@@ -83,7 +75,7 @@ function estimate({ state, employees, industry, singleShare }) {
       bucket.self_insured_pct * 100
     )}% of enrollees in this size bucket are in self-insured plans nationally.`,
     "Self-funded figure is an employer-cost equivalent (claims + admin + stop-loss), not a market premium.",
-    "Range reflects benchmark-level uncertainty only. True quotes also depend on workforce age/sex mix, claims history, plan design, and carrier — none of which MEPS-IC captures at the employer level.",
+    "Figures shown are point estimates from a bucket-level model. Real-world variance is large — true quotes also depend on workforce age/sex mix, claims history, plan design, and carrier, none of which MEPS-IC captures at the employer level.",
   ];
   if (employees < 50)
     notes.push(
@@ -96,8 +88,8 @@ function estimate({ state, employees, industry, singleShare }) {
 
   return {
     bucket,
-    fiSingle, fiFamily, fiBlended,
-    sfSingle, sfFamily, sfBlended,
+    fiBlended,
+    sfBlended,
     notes,
   };
 }
@@ -140,38 +132,26 @@ function recalc() {
   }`;
 
   $("fi-pepm").textContent = fmtUSD2.format(r.fiBlended.monthly);
-  $("fi-range").textContent = `Range: ${fmtUSD2.format(r.fiBlended.low)} – ${fmtUSD2.format(r.fiBlended.high)}`;
   $("sf-pepm").textContent = fmtUSD2.format(r.sfBlended.monthly);
-  $("sf-range").textContent = `Range: ${fmtUSD2.format(r.sfBlended.low)} – ${fmtUSD2.format(r.sfBlended.high)}`;
   const delta = r.sfBlended.monthly - r.fiBlended.monthly;
   const deltaEl = $("sf-delta");
   deltaEl.textContent = `${fmtUSD2.format(delta)} vs FI`;
   deltaEl.className = "metric-delta " + (delta < 0 ? "good" : "bad");
   $("sf-prob").textContent = `${Math.round(r.bucket.self_insured_pct * 100)}%`;
 
-  const tbody = document.querySelector("#tier-table tbody");
-  tbody.innerHTML = "";
-  const rows = [
-    ["Single coverage", r.fiSingle, r.sfSingle],
-    ["Family coverage", r.fiFamily, r.sfFamily],
-  ];
-  for (const [label, fi, sf] of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML =
-      `<td>${label}</td>` +
-      `<td>${fmtUSD0.format(fi.annual)}</td>` +
-      `<td>${fmtUSD2.format(fi.monthly)}</td>` +
-      `<td>${fmtUSD2.format(fi.low)} – ${fmtUSD2.format(fi.high)}</td>` +
-      `<td>${fmtUSD0.format(sf.annual)}</td>` +
-      `<td>${fmtUSD2.format(sf.monthly)}</td>`;
-    tbody.appendChild(tr);
-  }
-
   const annualFI = r.fiBlended.monthly * 12 * employees;
   const annualSF = r.sfBlended.monthly * 12 * employees;
+  const annualSavings = Math.max(0, annualFI - annualSF);
   $("ann-fi").textContent = fmtUSD0.format(annualFI);
   $("ann-sf").textContent = fmtUSD0.format(annualSF);
-  $("ann-savings").textContent = fmtUSD0.format(annualFI - annualSF);
+  $("ann-savings").textContent = fmtUSD0.format(annualSavings);
+
+  const maxVal = Math.max(annualFI, 1);
+  const sfPct = (annualSF / maxVal) * 100;
+  const savingsPct = (annualSavings / maxVal) * 100;
+  $("bar-sf").style.width = `${sfPct}%`;
+  $("bar-savings").style.left = `${sfPct}%`;
+  $("bar-savings").style.width = `${savingsPct}%`;
 
   const notesEl = $("notes");
   notesEl.innerHTML = "";

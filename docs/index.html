@@ -41,12 +41,10 @@
       <div class="metric">
         <div class="metric-label">Fully-insured PEPM</div>
         <div class="metric-value" id="fi-pepm">–</div>
-        <div class="metric-range" id="fi-range"></div>
       </div>
       <div class="metric">
         <div class="metric-label">Self-funded equivalent PEPM</div>
         <div class="metric-value" id="sf-pepm">–</div>
-        <div class="metric-range" id="sf-range"></div>
         <div class="metric-delta" id="sf-delta"></div>
       </div>
       <div class="metric">
@@ -58,39 +56,28 @@
   </section>
 
   <section class="card">
-    <h2>Breakdown by coverage tier</h2>
-    <div class="table-wrap">
-      <table id="tier-table">
-        <thead>
-          <tr>
-            <th>Tier</th>
-            <th>FI annual</th>
-            <th>FI monthly</th>
-            <th>FI range (monthly)</th>
-            <th>SF annual</th>
-            <th>SF monthly</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="card">
     <h2>Estimated annual impact</h2>
-    <div class="metrics">
-      <div class="metric">
-        <div class="metric-label">Fully-insured total annual</div>
-        <div class="metric-value" id="ann-fi">–</div>
+    <div class="impact-chart">
+      <div class="bar-row">
+        <div class="bar-label">Fully-insured total annual</div>
+        <div class="bar-track"><div class="bar bar-fi"></div></div>
+        <div class="bar-amount" id="ann-fi">–</div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Self-funded equivalent total annual</div>
-        <div class="metric-value" id="ann-sf">–</div>
+      <div class="bar-row">
+        <div class="bar-label">Self-funded equivalent total annual</div>
+        <div class="bar-track">
+          <div class="bar bar-sf" id="bar-sf"></div>
+          <div class="bar bar-savings" id="bar-savings"></div>
+        </div>
+        <div class="bar-amount" id="ann-sf">–</div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Implied annual savings if self-funded</div>
-        <div class="metric-value" id="ann-savings">–</div>
-        <div class="metric-range">Real-world variance is large — see notes below.</div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch swatch-fi"></span>Premium / employer cost</span>
+        <span class="legend-item"><span class="swatch swatch-savings"></span>Implied annual savings if self-funded</span>
+      </div>
+      <div class="savings-callout">
+        <div class="savings-callout-label">Implied annual savings if self-funded</div>
+        <div class="savings-callout-value" id="ann-savings">–</div>
       </div>
     </div>
   </section>
@@ -113,7 +100,7 @@
           of state premium tax and insurer profit margin, net of stop-loss premium.</li>
       </ol>
       <p>Single and family results are blended using the configured enrollment-tier mix.
-        The reported range reflects benchmark-level uncertainty; it does <strong>not</strong> include
+        Figures shown are point estimates from a bucket-level model and do <strong>not</strong> reflect
         employer-specific variance from age/sex mix, claims history, or plan design.</p>
     </details>
     <details>
